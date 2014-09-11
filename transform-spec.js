@@ -51,9 +51,15 @@ describe('Variable Declaration', function () {
     });
   });
 
-  it('single declaration w/ table init', function () {
+  it('single declaration w/ empty table init', function () {
     scriptEqual('local t = {}', function script () {
       var t = {};
+    });
+  });
+
+  it('single declaration w/ two-element array table init', function () {
+    scriptEqual('local t = {a = 1, ["b"] = 2, [2] = 22}', function script () {
+      var t = {a: 1, "b": 2, 2: 22};
     });
   });
 

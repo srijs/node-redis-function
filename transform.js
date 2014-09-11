@@ -11,6 +11,7 @@ var compileLiteral = function (tree) {
 
   switch (typeof tree.value) {
     case 'number': type = 'NumericLiteral'; break;
+    case 'string': type = 'StringLiteral'; break;
     default: throw new Error('Unexpected literal type ' + typeof tree.value);
   }
 
@@ -22,11 +23,59 @@ var compileLiteral = function (tree) {
 
 };
 
+var compileObjectExpression_propertyValue = function (tree) {
+
+  switch (tree.type) {
+    case 'Literal': return compileLiteral(tree);
+    default: throw new Error('Unexpected property value type ' + tree.type);
+  }
+
+};
+
 var compileObjectExpression = function (tree) {
 
   return {
     type: 'TableConstructorExpression',
-    fields: tree.properties
+    fields: tree.properties.map(function (property) {
+      switch (property.key.type) {
+        case 'Identifier':
+          return {
+            type: 'TableKeyString',
+            key: property.key,
+            value: compileObjectExpression_propertyValue(property.value)
+          }
+        case 'Literal':
+          return {
+            type: 'TableKey',
+            key: compileLiteral(property.key),
+            value: compileObjectExpression_propertyValue(property.value)
+          }
+        default: throw new Error('Unexpected property key type ' + property.key.type);
+      }
+    })
+  };
+
+};
+
+var compileArrayExpression_element = function (tree) {
+
+  switch (tree.type) {
+    case 'Literal': return compileLiteral(tree);
+    default: throw new Error('Unexpected array element type ' + tree.type);
+  }
+
+};
+
+var compileArrayExpression = function (tree) {
+
+  return {
+    type: 'TableConstructorExpression',
+    fields: tree.elements.map(function (element) {
+      return {
+        type: 'TableValue',
+        value: compileArrayExpression_element(element)
+      }
+    })
   };
 
 };
@@ -54,6 +103,7 @@ var compileVariableDeclarator_init = function (tree) {
       case 'BinaryExpression': return compileBinaryExpression(tree.init);
       case 'UnaryExpression': return compileUnaryExpression(tree.init);
       case 'ObjectExpression': return compileObjectExpression(tree.init);
+      case 'ArrayExpression': return compileArrayExpression(tree.init);
       default: throw new Error('Unexpected init ' + tree.init.type);
     }
   } else {
