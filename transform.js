@@ -158,7 +158,7 @@ var _CallExpression_base = function (tree) {
 
 var _CallExpression_argument = function (tree) {
 
-  return sub(tree, ['Literal', 'ObjectExpression', 'ArrayExpression']);
+  return sub(tree, ['Literal', 'ObjectExpression', 'ArrayExpression', 'CallExpression']);
 
 };
 

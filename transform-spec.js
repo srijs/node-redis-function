@@ -97,4 +97,10 @@ describe('Function Call', function () {
     });
   });
 
+  it('single function call, nested arguments', function () {
+    scriptEqual('redis.call(1.1, redis.call({}), {7,8}, "foo")', function script () {
+      redis.call(1.1, redis.call({}), [7,8], "foo");
+    });
+  });
+
 });
