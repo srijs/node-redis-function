@@ -133,6 +133,70 @@ var compileVariableDeclaration = function (tree) {
 
 };
 
+var compileMemberExpression = function (tree) {
+  assert.strictEqual(tree.type, 'MemberExpression');
+
+  var indexer;
+  if (tree.computed === false) {
+    indexer = '.';
+  }
+
+  return {
+    type: 'MemberExpression',
+    indexer: indexer,
+    identifier: tree.property,
+    base: tree.object
+  };
+
+};
+
+var compileCallExpression_base = function (tree) {
+  
+  switch (tree.type) {
+    case 'MemberExpression': return compileMemberExpression(tree);
+    default: throw new Error('Unexpected call expression callee type ' + tree.type);
+  }
+
+};
+
+var compileCallExpression_argument = function (tree) {
+
+  switch (tree.type) {
+    case 'Literal': return compileLiteral(tree);
+    case 'ObjectExpression': return compileObjectExpression(tree);
+    case 'ArrayExpression': return compileArrayExpression(tree);
+    default: throw new Error('Unexpected call expression argument type ' + tree.type);
+  }
+
+};
+
+var compileCallExpression = function (tree) {
+  assert.strictEqual(tree.type, 'CallExpression');
+
+  return {
+    type: 'CallExpression',
+    arguments: tree.arguments.map(compileCallExpression_argument),
+    base: compileCallExpression_base(tree.callee)
+  };
+
+};
+
+var compileExpressionStatement = function (tree) {
+  assert.strictEqual(tree.type, 'ExpressionStatement');
+
+  var expression;
+
+  switch (tree.expression.type) {
+    case 'CallExpression':
+      return {
+        type: 'CallStatement',
+        expression: compileCallExpression(tree.expression)
+      }
+    default: throw new Error('Unexpected expression type ' + tree.expression.type);
+  }
+
+};
+
 var compileBlockStatement = function (tree) {
   assert.strictEqual(tree.type, 'BlockStatement');
 

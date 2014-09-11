@@ -76,3 +76,25 @@ describe('Variable Declaration', function () {
   });
 
 });
+
+describe('Function Call', function () {
+
+  it('single function call, no arguments', function () {
+    scriptEqual('redis.call()', function script () {
+      redis.call();
+    });
+  });
+
+  it('single function call, one numeric argument', function () {
+    scriptEqual('redis.call(1)', function script () {
+      redis.call(1);
+    });
+  });
+
+  it('single function call, mixed-type arguments', function () {
+    scriptEqual('redis.call(1.1, {}, {7,8}, "foo")', function script () {
+      redis.call(1.1, {}, [7,8], "foo");
+    });
+  });
+
+});
