@@ -10,6 +10,9 @@
     "esprima": "^1.2.2"
   },
   "devDependencies": {
+    "cli-color": "^0.3.2",
+    "difflib": "^0.2.4",
+    "json-diff": "^0.3.1",
     "luaparse": "^0.1.6",
     "mocha": "^1.21.4"
   },

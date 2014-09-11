@@ -2,6 +2,7 @@ var util = require('util'),
     assert = require('assert'),
     esprima = require('esprima'),
     luaparse = require('luaparse'),
+    jsondiff = require('json-diff'),
     transform = require('./transform');
 
 var scriptEqual = function (lua, js) {
@@ -12,9 +13,7 @@ var scriptEqual = function (lua, js) {
   try {
     assert.deepEqual(luaTree, transform(jsTree));
   } catch (e) {
-    console.log(util.inspect(jsTree, {depth: null}));
-    console.log(util.inspect(luaTree, {depth: null}));
-    console.log(util.inspect(transform(jsTree), {depth: null}));
+    console.log(jsondiff.diffString(transform(jsTree), luaTree));
     throw new Error('NOT EQUAL');
   }
 };
