@@ -1,9 +1,5 @@
 var assert = require('assert');
 
-var truthy = function (val) {
-  return !!val;
-};
-
 var compileLiteral = function (tree) {
   assert.strictEqual(tree.type, 'Literal');
 
