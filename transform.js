@@ -17,6 +17,7 @@ t.Literal = function (tree) {
   switch (typeof tree.value) {
     case 'number': type = 'NumericLiteral'; break;
     case 'string': type = 'StringLiteral'; break;
+    case 'boolean': type = 'BooleanLiteral'; break;
     default: throw new Error('Unexpected literal type ' + typeof tree.value);
   }
 
@@ -109,7 +110,8 @@ var _VariableDeclarator_init = function (tree) {
       'UnaryExpression',
       'ObjectExpression',
       'ArrayExpression',
-      'MemberExpression'
+      'MemberExpression',
+      'CallExpression'
     ]);
   } else {
     return {
@@ -174,7 +176,13 @@ var _CallExpression_base = function (tree) {
 
 var _CallExpression_argument = function (tree) {
 
-  return sub(tree, ['Literal', 'ObjectExpression', 'ArrayExpression', 'CallExpression']);
+  return sub(tree, [
+    'Literal',
+    'ObjectExpression',
+    'ArrayExpression',
+    'CallExpression',
+    'MemberExpression'
+  ]);
 
 };
 
@@ -211,8 +219,8 @@ t.BinaryExpression = function (tree) {
   return {
     type: 'BinaryExpression',
     operator: tree.operator,
-    left: sub(tree.left, ['Literal', 'Identifier']),
-    right: sub(tree.right, ['Literal', 'Identifier'])
+    left: sub(tree.left, ['Literal', 'Identifier', 'MemberExpression']),
+    right: sub(tree.right, ['Literal', 'Identifier', 'MemberExpression'])
   };
 
 };
@@ -225,6 +233,7 @@ t.ReturnStatement = function (tree) {
   if (tree.argument) {
     arg = sub(tree.argument, [
       'Literal',
+      'Identifier',
       'BinaryExpression',
       'CallExpression',
       'MemberExpression'
@@ -238,26 +247,59 @@ t.ReturnStatement = function (tree) {
 
 };
 
+t.IfStatement = function (tree) {
+  assert.strictEqual(tree.type, 'IfStatement');
+  
+  var body = sub(tree.consequent, ['ExpressionStatement', 'BlockStatement']);
+
+  var clauses = [{
+    type: 'IfClause',
+    condition: sub(tree.test, ['BinaryExpression', 'Literal']),
+    body: body instanceof Array ? body : [body]
+  }];
+
+  if (tree.alternate) {
+    var elseBody = sub(tree.alternate, [
+      'ExpressionStatement',
+      'BlockStatement',
+      'IfStatement'
+    ]);
+    clauses.push({
+      type: 'ElseClause',
+      body: elseBody instanceof Array ? elseBody : [elseBody]
+    });
+  }
+
+  return {
+    type: 'IfStatement',
+    clauses: clauses
+  };
+
+  return tree;
+
+};
+
 t.BlockStatement = function (tree) {
   assert.strictEqual(tree.type, 'BlockStatement');
 
-  return {
-    type: 'Chunk',
-    body: tree.body.map(function (child) {
-      return sub(child, [
-        'VariableDeclaration',
-        'ExpressionStatement',
-        'ReturnStatement'
-      ]);
-    })
-  };
+  return tree.body.map(function (child) {
+    return sub(child, [
+      'VariableDeclaration',
+      'ExpressionStatement',
+      'ReturnStatement',
+      'IfStatement'
+    ]);
+  });
 
 };
 
 t.FunctionDeclaration = function (tree) {
   assert.strictEqual(tree.type, 'FunctionDeclaration');
 
-  return t.BlockStatement(tree.body);
+  return {
+    type: 'Chunk',
+    body: t.BlockStatement(tree.body)
+  }
 
 };
 

@@ -157,37 +157,100 @@ describe('Function Call', function () {
 
 });
 
-describe('Return', function () {
+describe('Return Statement', function () {
 
   it('no value', function () {
-    scriptEqual('return', function script (script) {
+    scriptEqual('return', function script () {
       return;
     });
   });
 
   it('literal value', function () {
-    scriptEqual('return 5', function script (script) {
+    scriptEqual('return 5', function script () {
       return 5;
     });
   });
   
   it('binary expression value', function () {
-    scriptEqual('return x == 5', function script (script) {
+    scriptEqual('return x == 5', function script () {
       return x == 5;
     });
   });
   
   it('call expression value', function () {
-    scriptEqual('return x()', function script (script) {
+    scriptEqual('return x()', function script () {
       return x();
     });
   });
 
   it('member expression value', function () {
-    scriptEqual('return x.y', function script (script) {
+    scriptEqual('return x.y', function script () {
       return x.y;
     });
   });
 
+});
+
+describe('If Statament', function () {
+
+  it('simple one-line w/o else', function () {
+    scriptEqual('if true then x() end', function script () {
+      if (true) x();
+    });
+  });
+
+  it('simple blockw w/o else', function () {
+    scriptEqual('if true then x() end', function script () {
+      if (true) {
+        x();
+      }
+    });
+  });
+  
+  it('simple block w/ one-line else', function () {
+    scriptEqual('if true then x() else y() end', function script () {
+      if (true) {
+        x();
+      } else y();
+    });
+  });
+
+  it('simple block w/ block else', function () {
+    scriptEqual('if true then x() else y() end', function script () {
+      if (true) {
+        x();
+      } else {
+        y();
+      }
+    });
+  });
+
+  it('block w/ block else w/ nested if', function () {
+    scriptEqual('if true then x() else if false then y() end end', function script () {
+      if (true) {
+        x();
+      } else if (false) {
+        y();
+      }
+    });
+  });
+
+});
+
+describe('Simple Examples', function () {
+
+  it('compare and delete', function () {
+    scriptEqual([
+      "local val = redis.call('get', KEYS[1])",
+      "if val == ARGV[1] then redis.call('del', KEYS[1]) end",
+      "return val"
+    ].join('\n'), function script () {
+      var val = redis.call('get', KEYS[1]);
+      if (val == ARGV[1]) {
+        redis.call('del', KEYS[1]);
+      }
+      return val;
+    });
+  });
 
 });
