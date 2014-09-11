@@ -56,8 +56,14 @@ describe('Variable Declaration', function () {
       var t = {};
     });
   });
+  
+  it('single declaration w/ mixed-type array table init', function () {
+    scriptEqual('local t = {a = 1, b = "abc", c = {}, d = {}}', function script () {
+      var t = {a: 1, b: "abc", c: {}, d: []};
+    });
+  });
 
-  it('single declaration w/ two-element array table init', function () {
+  it('single declaration w/ mixed-key array table init', function () {
     scriptEqual('local t = {a = 1, ["b"] = 2, [2] = 22}', function script () {
       var t = {a: 1, "b": 2, 2: 22};
     });

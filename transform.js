@@ -27,6 +27,8 @@ var compileObjectExpression_propertyValue = function (tree) {
 
   switch (tree.type) {
     case 'Literal': return compileLiteral(tree);
+    case 'ObjectExpression': return compileObjectExpression(tree);
+    case 'ArrayExpression': return compileArrayExpression(tree);
     default: throw new Error('Unexpected property value type ' + tree.type);
   }
 
