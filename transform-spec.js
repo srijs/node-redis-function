@@ -63,6 +63,12 @@ describe('Variable Declaration', function () {
     });
   });
 
+  it('single declaration w/ nested table init', function () {
+    scriptEqual('local t = {c = {d = {e = 5}}}', function script () {
+      var t = {c: {d: {e: 5}}};
+    });
+  });
+
   it('single declaration w/ mixed-key array table init', function () {
     scriptEqual('local t = {a = 1, ["b"] = 2, [2] = 22}', function script () {
       var t = {a: 1, "b": 2, 2: 22};
