@@ -31,7 +31,13 @@ t.Literal = function (tree) {
 
 var _ObjectExpression_propertyValue = function (tree) {
 
-  return sub(tree, ['Literal', 'ObjectExpression', 'ArrayExpression']);
+  return sub(tree, [
+    'Literal',
+    'ObjectExpression',
+    'ArrayExpression',
+    'Identifier',
+    'MemberExpression'
+  ]);
 
 };
 
@@ -236,7 +242,8 @@ t.ReturnStatement = function (tree) {
       'Identifier',
       'BinaryExpression',
       'CallExpression',
-      'MemberExpression'
+      'MemberExpression',
+      'ObjectExpression'
     ]);
   }
 
@@ -310,7 +317,32 @@ t.Program = function (tree) {
     throw new Error('Program must contain a single top-level function');
   }
 
-  return t.FunctionDeclaration(tree.body[0]); 
+  var toplevel = tree.body[0],
+      params = toplevel.params,
+      body = t.BlockStatement(toplevel.body);
+
+  if (params.length > 0) {
+    body.unshift({
+      type: 'LocalStatement',
+      variables: params,
+      init: params.map(function (param, i) {
+        return {
+          type: 'IndexExpression',
+          index: {type: 'NumericLiteral', value: i + 1, raw: (i + 1).toString()},
+          base: {type: 'Identifier', name: 'KEYS'}
+        }
+      })
+    });
+  }
+
+  return {
+    id: toplevel.id.name,
+    params: params.map(function (param) { return param.name; }),
+    tree: {
+      type: 'Chunk',
+      body: body
+    }
+  };
 
 };
 

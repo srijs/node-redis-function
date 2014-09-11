@@ -10,10 +10,11 @@ var scriptEqual = function (lua, js) {
     comments: false
   });
   var jsTree = esprima.parse(js.toString());
+  var tree = transform(jsTree).tree;
   try {
-    assert.deepEqual(luaTree, transform(jsTree));
+    assert.deepEqual(luaTree, tree);
   } catch (e) {
-    console.log(jsondiff.diffString(transform(jsTree), luaTree));
+    console.log(jsondiff.diffString(tree, luaTree));
     throw new Error('NOT EQUAL');
   }
 };
