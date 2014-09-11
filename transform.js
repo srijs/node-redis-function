@@ -34,6 +34,12 @@ var _ObjectExpression_propertyValue = function (tree) {
 
 };
 
+t.Identifier = function (tree) {
+
+  return tree;
+
+};
+
 t.ObjectExpression = function (tree) {
 
   return {
@@ -102,7 +108,8 @@ var _VariableDeclarator_init = function (tree) {
       'BinaryExpression',
       'UnaryExpression',
       'ObjectExpression',
-      'ArrayExpression'
+      'ArrayExpression',
+      'MemberExpression'
     ]);
   } else {
     return {
@@ -136,17 +143,26 @@ t.VariableDeclaration = function (tree) {
 t.MemberExpression = function (tree) {
   assert.strictEqual(tree.type, 'MemberExpression');
 
-  var indexer;
-  if (tree.computed === false) {
-    indexer = '.';
-  }
+  var base = sub(tree.object, [
+    'Identifier',
+    'MemberExpression',
+    'CallExpression'
+  ]);
 
-  return {
-    type: 'MemberExpression',
-    indexer: indexer,
-    identifier: tree.property,
-    base: tree.object
-  };
+  if (tree.computed) {
+    return {
+      type: 'IndexExpression',
+      index: t.Literal(tree.property),
+      base: base
+    }
+  } else {
+    return {
+      type: 'MemberExpression',
+      indexer: '.',
+      identifier: tree.property,
+      base: base
+    };
+  }
 
 };
 

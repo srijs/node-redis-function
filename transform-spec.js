@@ -77,6 +77,58 @@ describe('Variable Declaration', function () {
 
 });
 
+describe('Member Access', function () {
+
+  it('simple non-computed access', function () {
+    scriptEqual('local x = a.b', function script () {
+      var x = a.b;
+    });
+  });
+
+  it('nested non-computed access', function () {
+    scriptEqual('local x = a.b.c', function script () {
+      var x = a.b.c;
+    });
+  });
+  
+  it('nested non-computed access, mixed with calls', function () {
+    scriptEqual('local x = a.b().c', function script () {
+      var x = a.b().c;
+    });
+  });
+
+  it('simple numeric computed access', function () {
+    scriptEqual('local x = a[1]', function script () {
+      var x = a[1];
+    });
+  });
+
+  it('nested numeric computed access', function () {
+    scriptEqual('local x = a[1][2]', function script () {
+      var x = a[1][2];
+    });
+  });
+
+  it('nested mixed computed access', function () {
+    scriptEqual('local x = a[1]["b"]', function script () {
+      var x = a[1]["b"];
+    });
+  });
+
+  it('nested mixed computed access, mixed with calls', function () {
+    scriptEqual('local x = a[1]()["b"]', function script () {
+      var x = a[1]()["b"];
+    });
+  });
+
+  it('nested mixed access, mixed with calls', function () {
+    scriptEqual('local x = a[1]()["b"].c', function script () {
+      var x = a[1]()["b"].c;
+    });
+  });
+
+});
+
 describe('Function Call', function () {
 
   it('single function call, no arguments', function () {
