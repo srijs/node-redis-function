@@ -1,6 +1,15 @@
 var assert = require('assert');
 
-var compileLiteral = function (tree) {
+var t = {};
+
+var sub = function (tree, whitelist) {
+  if (whitelist.indexOf(tree.type) >= 0) {
+    return t[tree.type](tree);
+  }
+  throw new Error('Unexpected subtree type ' + tree.type);
+};
+
+t.Literal = function (tree) {
   assert.strictEqual(tree.type, 'Literal');
 
   var type;
@@ -19,18 +28,13 @@ var compileLiteral = function (tree) {
 
 };
 
-var compileObjectExpression_propertyValue = function (tree) {
+var _ObjectExpression_propertyValue = function (tree) {
 
-  switch (tree.type) {
-    case 'Literal': return compileLiteral(tree);
-    case 'ObjectExpression': return compileObjectExpression(tree);
-    case 'ArrayExpression': return compileArrayExpression(tree);
-    default: throw new Error('Unexpected property value type ' + tree.type);
-  }
+  return sub(tree, ['Literal', 'ObjectExpression', 'ArrayExpression']);
 
 };
 
-var compileObjectExpression = function (tree) {
+t.ObjectExpression = function (tree) {
 
   return {
     type: 'TableConstructorExpression',
@@ -40,13 +44,13 @@ var compileObjectExpression = function (tree) {
           return {
             type: 'TableKeyString',
             key: property.key,
-            value: compileObjectExpression_propertyValue(property.value)
+            value: _ObjectExpression_propertyValue(property.value)
           }
         case 'Literal':
           return {
             type: 'TableKey',
-            key: compileLiteral(property.key),
-            value: compileObjectExpression_propertyValue(property.value)
+            key: t.Literal(property.key),
+            value: _ObjectExpression_propertyValue(property.value)
           }
         default: throw new Error('Unexpected property key type ' + property.key.type);
       }
@@ -55,30 +59,27 @@ var compileObjectExpression = function (tree) {
 
 };
 
-var compileArrayExpression_element = function (tree) {
+var _ArrayExpression_element = function (tree) {
 
-  switch (tree.type) {
-    case 'Literal': return compileLiteral(tree);
-    default: throw new Error('Unexpected array element type ' + tree.type);
-  }
+  return sub(tree, ['Literal']);
 
 };
 
-var compileArrayExpression = function (tree) {
+t.ArrayExpression = function (tree) {
 
   return {
     type: 'TableConstructorExpression',
     fields: tree.elements.map(function (element) {
       return {
         type: 'TableValue',
-        value: compileArrayExpression_element(element)
+        value: _ArrayExpression_element(element)
       }
     })
   };
 
 };
 
-var compileVariableDeclarator_var = function (tree) {
+_VariableDeclarator_var = function (tree) {
   assert.strictEqual(tree.type, 'VariableDeclarator');
 
   if (tree.id.type !== 'Identifier') {
@@ -92,18 +93,17 @@ var compileVariableDeclarator_var = function (tree) {
 
 };
 
-var compileVariableDeclarator_init = function (tree) {
+var _VariableDeclarator_init = function (tree) {
   assert.strictEqual(tree.type, 'VariableDeclarator');
 
   if (tree.init) {
-    switch (tree.init.type) {
-      case 'Literal': return compileLiteral(tree.init);
-      case 'BinaryExpression': return compileBinaryExpression(tree.init);
-      case 'UnaryExpression': return compileUnaryExpression(tree.init);
-      case 'ObjectExpression': return compileObjectExpression(tree.init);
-      case 'ArrayExpression': return compileArrayExpression(tree.init);
-      default: throw new Error('Unexpected init ' + tree.init.type);
-    }
+    return sub(tree.init, [
+      'Literal',
+      'BinaryExpression',
+      'UnaryExpression',
+      'ObjectExpression',
+      'ArrayExpression'
+    ]);
   } else {
     return {
       type: 'NilLiteral',
@@ -114,17 +114,17 @@ var compileVariableDeclarator_init = function (tree) {
 
 };
 
-var compileVariableDeclaration = function (tree) {
+t.VariableDeclaration = function (tree) {
   assert.strictEqual(tree.type, 'VariableDeclaration');
 
   var out =  {
     type: 'LocalStatement',
-    variables: tree.declarations.map(compileVariableDeclarator_var),
+    variables: tree.declarations.map(_VariableDeclarator_var),
     init: tree.declarations.reduceRight(function (arr, tree) {
       if (!arr.length || !arr[arr.length - 1]) {
-        return tree.init ? [compileVariableDeclarator_init(tree)] : [];
+        return tree.init ? [_VariableDeclarator_init(tree)] : [];
       }
-      arr.unshift(compileVariableDeclarator_init(tree));
+      arr.unshift(_VariableDeclarator_init(tree));
       return arr;
     }, [])
   };
@@ -133,7 +133,7 @@ var compileVariableDeclaration = function (tree) {
 
 };
 
-var compileMemberExpression = function (tree) {
+t.MemberExpression = function (tree) {
   assert.strictEqual(tree.type, 'MemberExpression');
 
   var indexer;
@@ -150,38 +150,30 @@ var compileMemberExpression = function (tree) {
 
 };
 
-var compileCallExpression_base = function (tree) {
-  
-  switch (tree.type) {
-    case 'MemberExpression': return compileMemberExpression(tree);
-    default: throw new Error('Unexpected call expression callee type ' + tree.type);
-  }
+var _CallExpression_base = function (tree) {
+
+  return sub(tree, ['MemberExpression']);  
 
 };
 
-var compileCallExpression_argument = function (tree) {
+var _CallExpression_argument = function (tree) {
 
-  switch (tree.type) {
-    case 'Literal': return compileLiteral(tree);
-    case 'ObjectExpression': return compileObjectExpression(tree);
-    case 'ArrayExpression': return compileArrayExpression(tree);
-    default: throw new Error('Unexpected call expression argument type ' + tree.type);
-  }
+  return sub(tree, ['Literal', 'ObjectExpression', 'ArrayExpression']);
 
 };
 
-var compileCallExpression = function (tree) {
+t.CallExpression = function (tree) {
   assert.strictEqual(tree.type, 'CallExpression');
 
   return {
     type: 'CallExpression',
-    arguments: tree.arguments.map(compileCallExpression_argument),
-    base: compileCallExpression_base(tree.callee)
+    arguments: tree.arguments.map(_CallExpression_argument),
+    base: _CallExpression_base(tree.callee)
   };
 
 };
 
-var compileExpressionStatement = function (tree) {
+t.ExpressionStatement = function (tree) {
   assert.strictEqual(tree.type, 'ExpressionStatement');
 
   var expression;
@@ -190,45 +182,41 @@ var compileExpressionStatement = function (tree) {
     case 'CallExpression':
       return {
         type: 'CallStatement',
-        expression: compileCallExpression(tree.expression)
+        expression: t.CallExpression(tree.expression)
       }
     default: throw new Error('Unexpected expression type ' + tree.expression.type);
   }
 
 };
 
-var compileBlockStatement = function (tree) {
+t.BlockStatement = function (tree) {
   assert.strictEqual(tree.type, 'BlockStatement');
 
   return {
     type: 'Chunk',
     body: tree.body.map(function (child) {
-      switch (child.type) {
-        case 'VariableDeclaration': return compileVariableDeclaration(child);
-        case 'ExpressionStatement': return compileExpressionStatement(child);
-        default: throw new Error('Unexpected child ' + child.type);
-      }
+      return sub(child, ['VariableDeclaration', 'ExpressionStatement']);
     })
   };
 
 };
 
-var compileFunctionDeclaration = function (tree) {
+t.FunctionDeclaration = function (tree) {
   assert.strictEqual(tree.type, 'FunctionDeclaration');
 
-  return compileBlockStatement(tree.body);
+  return t.BlockStatement(tree.body);
 
 };
 
-var compileProgram = function (tree) {
+t.Program = function (tree) {
   assert.strictEqual(tree.type, 'Program');
 
   if (tree.body.length !== 1 || tree.body[0].type !== 'FunctionDeclaration') {
     throw new Error('Program must contain a single top-level function');
   }
 
-  return compileFunctionDeclaration(tree.body[0]); 
+  return t.FunctionDeclaration(tree.body[0]); 
 
 };
 
-module.exports = compileProgram;
+module.exports = t.Program;
