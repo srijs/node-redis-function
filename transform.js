@@ -168,7 +168,7 @@ t.MemberExpression = function (tree) {
 
 var _CallExpression_base = function (tree) {
 
-  return sub(tree, ['MemberExpression']);  
+  return sub(tree, ['MemberExpression', 'Identifier']);  
 
 };
 
@@ -205,13 +205,50 @@ t.ExpressionStatement = function (tree) {
 
 };
 
+t.BinaryExpression = function (tree) {
+  assert.strictEqual(tree.type, 'BinaryExpression');
+
+  return {
+    type: 'BinaryExpression',
+    operator: tree.operator,
+    left: sub(tree.left, ['Literal', 'Identifier']),
+    right: sub(tree.right, ['Literal', 'Identifier'])
+  };
+
+};
+
+t.ReturnStatement = function (tree) {
+  assert.strictEqual(tree.type, 'ReturnStatement');
+
+  var arg;
+
+  if (tree.argument) {
+    arg = sub(tree.argument, [
+      'Literal',
+      'BinaryExpression',
+      'CallExpression',
+      'MemberExpression'
+    ]);
+  }
+
+  return {
+    type: 'ReturnStatement',
+    arguments: arg ? [arg] : []
+  };
+
+};
+
 t.BlockStatement = function (tree) {
   assert.strictEqual(tree.type, 'BlockStatement');
 
   return {
     type: 'Chunk',
     body: tree.body.map(function (child) {
-      return sub(child, ['VariableDeclaration', 'ExpressionStatement']);
+      return sub(child, [
+        'VariableDeclaration',
+        'ExpressionStatement',
+        'ReturnStatement'
+      ]);
     })
   };
 

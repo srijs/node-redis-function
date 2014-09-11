@@ -156,3 +156,38 @@ describe('Function Call', function () {
   });
 
 });
+
+describe('Return', function () {
+
+  it('no value', function () {
+    scriptEqual('return', function script (script) {
+      return;
+    });
+  });
+
+  it('literal value', function () {
+    scriptEqual('return 5', function script (script) {
+      return 5;
+    });
+  });
+  
+  it('binary expression value', function () {
+    scriptEqual('return x == 5', function script (script) {
+      return x == 5;
+    });
+  });
+  
+  it('call expression value', function () {
+    scriptEqual('return x()', function script (script) {
+      return x();
+    });
+  });
+
+  it('member expression value', function () {
+    scriptEqual('return x.y', function script (script) {
+      return x.y;
+    });
+  });
+
+
+});
