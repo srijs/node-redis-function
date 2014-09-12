@@ -5,12 +5,19 @@ var util = require('util'),
     jsondiff = require('json-diff'),
     transform = require('./transform');
 
+var compareGlobals = function (a, b) {
+  return a.name.localeCompare(b.name);
+};
+
 var scriptEqual = function (lua, js) {
   var luaTree = luaparse.parse(lua, {
-    comments: false
+    comments: false,
+    scope: true
   });
   var jsTree = esprima.parse(js.toString());
   var tree = transform(jsTree).tree;
+  luaTree.globals.sort(compareGlobals);
+  tree.globals.sort(compareGlobals);
   try {
     assert.deepEqual(luaTree, tree);
   } catch (e) {

@@ -1,15 +1,16 @@
-var assert = require('assert');
+var assert = require('assert'),
+    scopup = require('scopup');
 
 var t = {};
 
-var sub = function (tree, whitelist) {
+var sub = function (tree, vars, glob, whitelist) {
   if (whitelist.indexOf(tree.type) >= 0) {
-    return t[tree.type](tree);
+    return t[tree.type](tree, vars, glob);
   }
   throw new Error('Unexpected subtree type ' + tree.type);
 };
 
-t.Literal = function (tree) {
+t.Literal = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'Literal');
 
   var type;
@@ -29,9 +30,9 @@ t.Literal = function (tree) {
 
 };
 
-var _ObjectExpression_propertyValue = function (tree) {
+var _ObjectExpression_propertyValue = function (tree, vars, glob) {
 
-  return sub(tree, [
+  return sub(tree, vars, glob, [
     'Literal',
     'ObjectExpression',
     'ArrayExpression',
@@ -41,13 +42,24 @@ var _ObjectExpression_propertyValue = function (tree) {
 
 };
 
-t.Identifier = function (tree) {
+t.Identifier = function (tree, vars, glob) {
 
-  return tree;
+  var node = {
+    type: 'Identifier',
+    name: tree.name,
+    isLocal: vars.hasOwnProperty(tree.name)
+  };
+
+  if (!node.isLocal) {
+    glob[node.name] = node;
+  }
+
+
+  return node;
 
 };
 
-t.ObjectExpression = function (tree) {
+t.ObjectExpression = function (tree, vars, glob) {
 
   return {
     type: 'TableConstructorExpression',
@@ -57,13 +69,13 @@ t.ObjectExpression = function (tree) {
           return {
             type: 'TableKeyString',
             key: property.key,
-            value: _ObjectExpression_propertyValue(property.value)
+            value: _ObjectExpression_propertyValue(property.value, vars, glob)
           }
         case 'Literal':
           return {
             type: 'TableKey',
-            key: t.Literal(property.key),
-            value: _ObjectExpression_propertyValue(property.value)
+            key: t.Literal(property.key, vars, glob),
+            value: _ObjectExpression_propertyValue(property.value, vars, glob)
           }
         default: throw new Error('Unexpected property key type ' + property.key.type);
       }
@@ -72,45 +84,38 @@ t.ObjectExpression = function (tree) {
 
 };
 
-var _ArrayExpression_element = function (tree) {
+var _ArrayExpression_element = function (tree, vars, glob) {
 
-  return sub(tree, ['Literal']);
+  return sub(tree, vars, glob, ['Literal']);
 
 };
 
-t.ArrayExpression = function (tree) {
+t.ArrayExpression = function (tree, vars, glob) {
 
   return {
     type: 'TableConstructorExpression',
     fields: tree.elements.map(function (element) {
       return {
         type: 'TableValue',
-        value: _ArrayExpression_element(element)
+        value: _ArrayExpression_element(element, vars, glob)
       }
     })
   };
 
 };
 
-_VariableDeclarator_var = function (tree) {
+_VariableDeclarator_var = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'VariableDeclarator');
 
-  if (tree.id.type !== 'Identifier') {
-    throw new Error('Variable ID type has to be Identifier');
-  }
-
-  return {
-    type: 'Identifier',
-    name: tree.id.name
-  };
+  return t.Identifier(tree.id, vars, glob);
 
 };
 
-var _VariableDeclarator_init = function (tree) {
+var _VariableDeclarator_init = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'VariableDeclarator');
 
   if (tree.init) {
-    return sub(tree.init, [
+    return sub(tree.init, vars, glob, [
       'Literal',
       'BinaryExpression',
       'UnaryExpression',
@@ -129,17 +134,19 @@ var _VariableDeclarator_init = function (tree) {
 
 };
 
-t.VariableDeclaration = function (tree) {
+t.VariableDeclaration = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'VariableDeclaration');
 
   var out =  {
     type: 'LocalStatement',
-    variables: tree.declarations.map(_VariableDeclarator_var),
+    variables: tree.declarations.map(function (declaration) {
+      return _VariableDeclarator_var(declaration, vars, glob);
+    }),
     init: tree.declarations.reduceRight(function (arr, tree) {
       if (!arr.length || !arr[arr.length - 1]) {
-        return tree.init ? [_VariableDeclarator_init(tree)] : [];
+        return tree.init ? [_VariableDeclarator_init(tree, vars, glob)] : [];
       }
-      arr.unshift(_VariableDeclarator_init(tree));
+      arr.unshift(_VariableDeclarator_init(tree, vars, glob));
       return arr;
     }, [])
   };
@@ -148,10 +155,10 @@ t.VariableDeclaration = function (tree) {
 
 };
 
-t.MemberExpression = function (tree) {
+t.MemberExpression = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'MemberExpression');
 
-  var base = sub(tree.object, [
+  var base = sub(tree.object, vars, glob, [
     'Identifier',
     'MemberExpression',
     'CallExpression'
@@ -160,7 +167,7 @@ t.MemberExpression = function (tree) {
   if (tree.computed) {
     return {
       type: 'IndexExpression',
-      index: t.Literal(tree.property),
+      index: t.Literal(tree.property, vars, glob),
       base: base
     }
   } else {
@@ -174,16 +181,17 @@ t.MemberExpression = function (tree) {
 
 };
 
-var _CallExpression_base = function (tree) {
+var _CallExpression_base = function (tree, vars, glob) {
 
-  return sub(tree, ['MemberExpression', 'Identifier']);  
+  return sub(tree, vars, glob, ['MemberExpression', 'Identifier']);  
 
 };
 
-var _CallExpression_argument = function (tree) {
+var _CallExpression_argument = function (tree, vars, glob) {
 
-  return sub(tree, [
+  return sub(tree, vars, glob, [
     'Literal',
+    'Identifier',
     'ObjectExpression',
     'ArrayExpression',
     'CallExpression',
@@ -192,18 +200,20 @@ var _CallExpression_argument = function (tree) {
 
 };
 
-t.CallExpression = function (tree) {
+t.CallExpression = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'CallExpression');
 
   return {
     type: 'CallExpression',
-    arguments: tree.arguments.map(_CallExpression_argument),
-    base: _CallExpression_base(tree.callee)
+    arguments: tree.arguments.map(function (argument) {
+      return _CallExpression_argument(argument, vars, glob);
+    }),
+    base: _CallExpression_base(tree.callee, vars, glob)
   };
 
 };
 
-t.ExpressionStatement = function (tree) {
+t.ExpressionStatement = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'ExpressionStatement');
 
   var expression;
@@ -212,32 +222,32 @@ t.ExpressionStatement = function (tree) {
     case 'CallExpression':
       return {
         type: 'CallStatement',
-        expression: t.CallExpression(tree.expression)
+        expression: t.CallExpression(tree.expression, vars, glob)
       }
     default: throw new Error('Unexpected expression type ' + tree.expression.type);
   }
 
 };
 
-t.BinaryExpression = function (tree) {
+t.BinaryExpression = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'BinaryExpression');
 
   return {
     type: 'BinaryExpression',
     operator: tree.operator,
-    left: sub(tree.left, ['Literal', 'Identifier', 'MemberExpression']),
-    right: sub(tree.right, ['Literal', 'Identifier', 'MemberExpression'])
+    left: sub(tree.left, vars, glob, ['Literal', 'Identifier', 'MemberExpression']),
+    right: sub(tree.right, vars, glob, ['Literal', 'Identifier', 'MemberExpression'])
   };
 
 };
 
-t.ReturnStatement = function (tree) {
+t.ReturnStatement = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'ReturnStatement');
 
   var arg;
 
   if (tree.argument) {
-    arg = sub(tree.argument, [
+    arg = sub(tree.argument, vars, glob, [
       'Literal',
       'Identifier',
       'BinaryExpression',
@@ -254,19 +264,19 @@ t.ReturnStatement = function (tree) {
 
 };
 
-t.IfStatement = function (tree) {
+t.IfStatement = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'IfStatement');
   
-  var body = sub(tree.consequent, ['ExpressionStatement', 'BlockStatement']);
+  var body = sub(tree.consequent, vars, glob, ['ExpressionStatement', 'BlockStatement']);
 
   var clauses = [{
     type: 'IfClause',
-    condition: sub(tree.test, ['BinaryExpression', 'Literal']),
+    condition: sub(tree.test, vars, glob, ['BinaryExpression', 'Literal']),
     body: body instanceof Array ? body : [body]
   }];
 
   if (tree.alternate) {
-    var elseBody = sub(tree.alternate, [
+    var elseBody = sub(tree.alternate, vars, glob, [
       'ExpressionStatement',
       'BlockStatement',
       'IfStatement'
@@ -286,11 +296,11 @@ t.IfStatement = function (tree) {
 
 };
 
-t.BlockStatement = function (tree) {
+t.BlockStatement = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'BlockStatement');
 
   return tree.body.map(function (child) {
-    return sub(child, [
+    return sub(child, vars, glob, [
       'VariableDeclaration',
       'ExpressionStatement',
       'ReturnStatement',
@@ -300,12 +310,12 @@ t.BlockStatement = function (tree) {
 
 };
 
-t.FunctionDeclaration = function (tree) {
+t.FunctionDeclaration = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'FunctionDeclaration');
 
   return {
     type: 'Chunk',
-    body: t.BlockStatement(tree.body)
+    body: t.BlockStatement(tree.body, vars, glob)
   }
 
 };
@@ -318,8 +328,15 @@ t.Program = function (tree) {
   }
 
   var toplevel = tree.body[0],
-      params = toplevel.params,
-      body = t.BlockStatement(toplevel.body);
+      params = toplevel.params;
+
+  var scopes = scopup(tree),
+      resolved = scopup.resolve(scopes);
+
+  scopup.annotate(tree, resolved);
+
+  var glob = {},
+      body = t.BlockStatement(toplevel.body, toplevel.scopeVars, glob);
 
   if (params.length > 0) {
     body.unshift({
@@ -340,7 +357,8 @@ t.Program = function (tree) {
     params: params.map(function (param) { return param.name; }),
     tree: {
       type: 'Chunk',
-      body: body
+      body: body,
+      globals: Object.keys(glob).map(function (name) { return glob[name]; })
     }
   };
 
