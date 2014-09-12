@@ -10,6 +10,21 @@ var sub = function (tree, vars, glob, whitelist) {
   throw new Error('Unexpected subtree type ' + tree.type);
 };
 
+t.ThisExpression = function (tree, vars, glob) {
+  assert(tree.type, 'ThisExpression');
+
+  var node =  {
+    type: 'Identifier',
+    name: 'redis',
+    isLocal: false
+  };
+
+  glob['redis'] = node;
+
+  return node;
+
+};
+
 t.Literal = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'Literal');
 
@@ -161,7 +176,8 @@ t.MemberExpression = function (tree, vars, glob) {
   var base = sub(tree.object, vars, glob, [
     'Identifier',
     'MemberExpression',
-    'CallExpression'
+    'CallExpression',
+    'ThisExpression'
   ]);
 
   if (tree.computed) {
@@ -335,6 +351,25 @@ t.Program = function (tree) {
 
   scopup.annotate(tree, resolved);
 
+  if (toplevel.body.type !== 'BlockStatement') {
+    throw new Error('Program body consist of a single top-level block statement');
+  }
+
+  if (toplevel.body.body.length === 0) {
+    throw new Errror('Program body must not be empty');
+  }
+
+  var firstStatement = toplevel.body.body[0];
+
+  if (firstStatement.type !== 'ExpressionStatement' ||
+      firstStatement.expression.type !== 'Literal' ||
+      firstStatement.expression.value !== 'use redis') {
+    throw new Error('Program body must start with "use redis" statement');
+  }
+  
+  // Remove "use redis" statement prior to transformation 
+  toplevel.body.body.splice(0, 1);
+ 
   var glob = {},
       body = t.BlockStatement(toplevel.body, toplevel.scopeVars, glob);
 
