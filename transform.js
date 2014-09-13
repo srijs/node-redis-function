@@ -350,7 +350,7 @@ var _Program_paramInit = function (arity, params) {
 
 }; 
 
-t.Program = function (tree) {
+t.Program = function (tree, arity) {
   assert.strictEqual(tree.type, 'Program');
 
   if (tree.body.length !== 1 || tree.body[0].type !== 'FunctionDeclaration') {
@@ -387,15 +387,6 @@ t.Program = function (tree) {
   var glob = {},
       body = t.BlockStatement(toplevel.body, toplevel.scopeVars, glob);
 
-  var id, arity, idx = toplevel.id.name.lastIndexOf('$');
-  if (idx >= 0) {
-    id = toplevel.id.name.substr(0, idx);
-    arity = parseInt(toplevel.id.name.substr(idx + 1), 10) || 0;
-  } else {
-    id = toplevel.id.name;
-    arity = 0;
-  }
-
   if (params.length > 0) {
     body.unshift({
       type: 'LocalStatement',
@@ -405,7 +396,7 @@ t.Program = function (tree) {
   }
 
   return {
-    id: id,
+    id: toplevel.id.name,
     arity: arity,
     params: params.map(function (param) { return param.name; }),
     tree: {

@@ -1,9 +1,10 @@
 var redis = require('redis'),
-    eval = require('./index').eval;
+    redisFn = require('./index');
 
-var client = redis.createClient();
+redisFn.mixin(redis.RedisClient);
 
-function compareAndDelete$1 (key, cmp) {
+
+function compareAndDelete (key, cmp) {
   'use redis';
 
   var val = this.call('get', key);
@@ -14,13 +15,16 @@ function compareAndDelete$1 (key, cmp) {
 
 }
 
+
+var client = redis.createClient();
+
 client.on('ready', function () {
 
-  eval(client, compareAndDelete$1, 'x', 'hello', function (err, val) {
+  client.eval(compareAndDelete, 1, 'x', 'hello', function (err, val) {
     if (err) {
-      console.error('Error: ' + err);
+      throw err;
     } else {
-      console.log('Result: ' + val);
+      console.log(val);
     }
     client.end();
   });
