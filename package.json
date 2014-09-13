@@ -1,7 +1,7 @@
 {
-  "name": "redis-eval-js",
+  "name": "redis-function",
   "version": "0.0.0",
-  "description": "Run transpiled Javascript on the Redis scripting engine.",
+  "description": "Run transpiled Javascript functions on the Redis scripting engine.",
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/.bin/mocha *-spec.js"
