@@ -4,7 +4,7 @@ var assert = require('assert'),
 var t = {};
 
 var sub = function (tree, vars, glob, whitelist) {
-  if (whitelist.indexOf(tree.type) >= 0) {
+  if (!whitelist || whitelist.indexOf(tree.type) >= 0) {
     return t[tree.type](tree, vars, glob);
   }
   throw new Error('Unexpected subtree type ' + tree.type);
@@ -245,15 +245,76 @@ t.ExpressionStatement = function (tree, vars, glob) {
 
 };
 
+var _LogicalExpression_operator = function (operator) {
+
+  switch (operator) {
+    case '||': return 'or';
+    case '&&': return 'and';
+    default: throw new Error('Unexpected logical operator ' + operator);
+  }
+
+};
+
+t.LogicalExpression = function (tree, vars, glob) { 
+  assert.strictEqual(tree.type, 'LogicalExpression');
+
+  return {
+    type: 'LogicalExpression',
+    operator: _LogicalExpression_operator(tree.operator),
+    left: sub(tree.left, vars, glob),
+    right: sub(tree.right, vars, glob)
+  };
+
+};
+
+var _BinaryExpression_operator = function (operator) {
+
+  switch (operator) {
+    case '+': return '+';
+    case '-': return '-';
+    case '*': return '*';
+    case '/': return '/';
+    case '==': return '==';
+    case '!=': return '~=';
+    case '<': return'<';
+    case '>': return '>';
+    case '<=': return '<=';
+    case '>=': return '>=';
+    default: throw new Error('Unexpected binary operator ' + operator);
+  }
+
+};
+
 t.BinaryExpression = function (tree, vars, glob) {
   assert.strictEqual(tree.type, 'BinaryExpression');
 
   return {
     type: 'BinaryExpression',
-    operator: tree.operator,
-    left: sub(tree.left, vars, glob, ['Literal', 'Identifier', 'MemberExpression']),
-    right: sub(tree.right, vars, glob, ['Literal', 'Identifier', 'MemberExpression'])
+    operator: _BinaryExpression_operator(tree.operator),
+    left: sub(tree.left, vars, glob),
+    right: sub(tree.right, vars, glob)
   };
+
+};
+
+var _UnaryExpression_operator = function (operator) {
+
+  switch (operator) {
+    case '-': return '-';
+    case '!': return 'not';
+    default: throw new Error('Unexpected unary operator ' + operator);
+  }
+
+};
+
+t.UnaryExpression = function (tree, vars, glob) {
+  assert.strictEqual(tree.type, 'UnaryExpression');
+
+  return {
+    type: 'UnaryExpression',
+    operator: _UnaryExpression_operator(tree.operator),
+    argument: sub(tree.argument, vars, glob)
+  }
 
 };
 
@@ -263,14 +324,7 @@ t.ReturnStatement = function (tree, vars, glob) {
   var arg;
 
   if (tree.argument) {
-    arg = sub(tree.argument, vars, glob, [
-      'Literal',
-      'Identifier',
-      'BinaryExpression',
-      'CallExpression',
-      'MemberExpression',
-      'ObjectExpression'
-    ]);
+    arg = sub(tree.argument, vars, glob);
   }
 
   return {

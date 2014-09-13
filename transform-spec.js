@@ -275,6 +275,120 @@ describe('If Statament', function () {
 
 });
 
+describe('Operators', function () {
+
+  describe('Relational Operators', function () {
+
+    it('equality', function () {
+      scriptEqual('return a == b', function script () {
+        'use redis';
+        return a == b;
+      });
+    });
+    
+    it('inequality', function () {
+      scriptEqual('return a ~= b', function script () {
+        'use redis';
+        return a != b;
+      });
+    });
+    
+    it('less', function () {
+      scriptEqual('return a < b', function script () {
+        'use redis';
+        return a < b;
+      });
+    });
+    
+    it('greater', function () {
+      scriptEqual('return a > b', function script () {
+        'use redis';
+        return a > b;
+      });
+    });
+    
+    it('less or equal', function () {
+      scriptEqual('return a <= b', function script () {
+        'use redis';
+        return a <= b;
+      });
+    });
+    
+    it('greater or equal', function () {
+      scriptEqual('return a >= b', function script () {
+        'use redis';
+        return a >= b;
+      });
+    });
+  
+  });
+
+  describe('Arithmetic Operators', function () {
+
+    it('addition', function () {
+      scriptEqual('return a + b', function script () {
+        'use redis';
+        return a + b;
+      });
+    });
+
+    it('substraction', function () {
+      scriptEqual('return a - b', function script () {
+        'use redis';
+        return a - b;
+      });
+    });
+
+    it('multiplication', function () {
+      scriptEqual('return a * b', function script () {
+        'use redis';
+        return a * b;
+      });
+    });
+
+    it('division', function () {
+      scriptEqual('return a / b', function script () {
+        'use redis';
+        return a / b;
+      });
+    });
+    
+    it('negation', function () {
+      scriptEqual('return -b', function script () {
+        'use redis';
+        return -b;
+      });
+    });
+
+  });
+
+  describe('Logical Operators', function () {
+
+    it('logical or', function () {
+      scriptEqual('return a or b', function script () {
+        'use redis';
+        return a || b;
+      });
+    });
+    
+    it('logical and', function () {
+      scriptEqual('return a and b', function script () {
+        'use redis';
+        return a && b;
+      });
+    });
+    
+    it('logical not', function () {
+      scriptEqual('return not b', function script () {
+        'use redis';
+        return !b;
+      });
+    });
+    
+  });
+
+});
+
 describe('Simple Examples', function () {
 
   it('compare and delete', function () {
