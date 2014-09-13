@@ -21,12 +21,15 @@ var client = redis.createClient();
 client.on('ready', function () {
 
   client.eval(compareAndDelete, 1, 'x', 'hello', function (err, val) {
+
+    client.end();
+
     if (err) {
       throw err;
-    } else {
-      console.log(val);
     }
-    client.end();
+
+    console.log(val);
+
   });
 
 });
