@@ -1,6 +1,6 @@
 # redis function - redis scripts in javascript
 
-_Notice: this module is under heavy development and not yet ready for production. Also, a great part of the js syntax it not yet supported._
+_Notice: this module is under heavy development and not yet ready for production. Also, a great part of the js syntax is not yet supported.n_
 
 This is an interface for transpiling Javascript functions to [Lua](http://www.lua.org/) code and running them on the [Redis scripting engine](http://redis.io/commands/eval).
 
@@ -14,7 +14,7 @@ Install with:
 
 Simple example, included as example.js:
 
-```
+```js
     var redis = require('redis'),
         RedisFunction = require('redis-function');
 
