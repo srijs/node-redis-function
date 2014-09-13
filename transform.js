@@ -336,6 +336,20 @@ t.FunctionDeclaration = function (tree, vars, glob) {
 
 };
 
+var _Program_paramInit = function (arity, params) {
+
+  return params.map(function (param, i) {
+    var index = (i < arity) ? (i + 1) : (i - arity + 1);
+    var base  = (i < arity) ? 'KEYS' : 'ARGV';
+    return {
+      type: 'IndexExpression',
+      index: {type: 'NumericLiteral', value: index, raw: index.toString()},
+      base: {type: 'Identifier', name: base}
+    }
+  });
+
+}; 
+
 t.Program = function (tree) {
   assert.strictEqual(tree.type, 'Program');
 
@@ -373,22 +387,26 @@ t.Program = function (tree) {
   var glob = {},
       body = t.BlockStatement(toplevel.body, toplevel.scopeVars, glob);
 
+  var id, arity, idx = toplevel.id.name.lastIndexOf('$');
+  if (idx >= 0) {
+    id = toplevel.id.name.substr(0, idx);
+    arity = parseInt(toplevel.id.name.substr(idx + 1), 10) || 0;
+  } else {
+    id = toplevel.id.name;
+    arity = 0;
+  }
+
   if (params.length > 0) {
     body.unshift({
       type: 'LocalStatement',
       variables: params,
-      init: params.map(function (param, i) {
-        return {
-          type: 'IndexExpression',
-          index: {type: 'NumericLiteral', value: i + 1, raw: (i + 1).toString()},
-          base: {type: 'Identifier', name: 'KEYS'}
-        }
-      })
+      init: _Program_paramInit(arity, params)
     });
   }
 
   return {
-    id: toplevel.id.name,
+    id: id,
+    arity: arity,
     params: params.map(function (param) { return param.name; }),
     tree: {
       type: 'Chunk',

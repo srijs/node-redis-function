@@ -3,7 +3,6 @@ var crypto = require('crypto'),
     luamin = require('luamin'),
     transform = require('./transform');
 
-
 var Script = function (fn) {
 
   if (!(this instanceof Script)) {
@@ -21,7 +20,7 @@ var Script = function (fn) {
   result.tree.globals = [];
 
   this.id     = result.id;
-  this.nargs  = result.params.length;
+  this.nargs  = result.arity;
   this.script = luamin.minify(result.tree);
   this.sha1   = crypto.createHash('sha1')
                       .update(this.script)
@@ -29,30 +28,12 @@ var Script = function (fn) {
 
 };
 
+module.exports.eval = function (redis, fn) {
 
-var Evaluator = module.exports = function (redis) {
-
-  if (!(this instanceof Evaluator)) {
-    return new Evaluator(redis);
-  }
-
-  this._scripts = {};
-  this._redis   = redis;
-
-};
-
-Evaluator.prototype.add = function (fn) {
   var script = new Script(fn);
-  this._scripts[script.id] = script;
-  return script;
-};
 
-Evaluator.prototype.get = function (id) {
-  return this._scripts[id];
-};
+  var args = [script.script, script.nargs].concat(Array.prototype.slice.call(arguments, 2));
 
-Evaluator.prototype.eval = function (id) {
-  var script = this.get(id);
-  var args = [script.script, script.nargs].concat(Array.prototype.slice.call(arguments, 1));
-  return this._redis.eval.apply(this._redis, args);
+  return redis.eval.apply(redis, args);
+
 };
