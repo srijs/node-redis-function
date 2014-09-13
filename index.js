@@ -3,10 +3,10 @@ var crypto = require('crypto'),
     luamin = require('luamin'),
     transform = require('./transform');
 
-var Script = module.exports = function (fn, arity) {
+var RedisFunction = module.exports = function (fn, arity) {
 
-  if (!(this instanceof Script)) {
-    return new Script(fn, arity);
+  if (!(this instanceof RedisFunction)) {
+    return new RedisFunction(fn, arity);
   }
 
   if (typeof fn !== 'function') {
@@ -23,7 +23,7 @@ var Script = module.exports = function (fn, arity) {
   
   result.tree.globals = [];
 
-  this.id     = result.id;
+  this.name   = result.id;
   this.arity  = arity;
   this.script = luamin.minify(result.tree);
   this.sha1   = crypto.createHash('sha1')
@@ -36,20 +36,20 @@ var _eval = function (script, redis, args) {
   return redis.eval.apply(redis, [script.script, script.arity].concat(args));
 }
 
-Script.prototype.eval = function (redis) {
+RedisFunction.prototype.eval = function (redis) {
   return _eval(this, redis, Array.prototype.slice.call(arguments, 1));
 };
 
-Script.eval = function (redis, fn, arity) {
-  return _eval(Script(fn, arity), redis, Array.prototype.slice.call(arguments, 3));
+RedisFunction.eval = function (redis, fn, arity) {
+  return _eval(RedisFunction(fn, arity), redis, Array.prototype.slice.call(arguments, 3));
 };
 
-Script.mixin = function (object) {
+RedisFunction.mixin = function (object) {
   var target = object.prototype || object;
   var targetEval = target.eval;
   target.eval = function (fn, arity) {
     if (typeof fn === 'function') {
-      return _eval(Script(fn, arity), this, Array.prototype.slice.call(arguments, 2));
+      return _eval(RedisFunction(fn, arity), this, Array.prototype.slice.call(arguments, 2));
     }
     return targetEval.apply(this, arguments);
   };

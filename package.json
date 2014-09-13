@@ -1,6 +1,6 @@
 {
   "name": "redis-function",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Run transpiled Javascript functions on the Redis scripting engine.",
   "main": "index.js",
   "scripts": {

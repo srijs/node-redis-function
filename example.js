@@ -1,7 +1,7 @@
 var redis = require('redis'),
-    redisFn = require('./index');
+    RedisFunction = require('./index');
 
-redisFn.mixin(redis.RedisClient);
+RedisFunction.mixin(redis.RedisClient);
 
 
 function compareAndDelete (key, cmp) {
@@ -17,19 +17,7 @@ function compareAndDelete (key, cmp) {
 
 
 var client = redis.createClient();
-
-client.on('ready', function () {
-
-  client.eval(compareAndDelete, 1, 'x', 'hello', function (err, val) {
-
-    client.end();
-
-    if (err) {
-      throw err;
-    }
-
-    console.log(val);
-
-  });
-
-});
+client.set('foo', 'bar', redis.print);
+client.eval(compareAndDelete, 1, 'foo', 'baz', redis.print);
+client.eval(compareAndDelete, 1, 'foo', 'bar', redis.print);
+client.quit();
