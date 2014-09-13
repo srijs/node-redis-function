@@ -1,10 +1,10 @@
 {
   "name": "redis-function",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Run transpiled Javascript functions on the Redis scripting engine.",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha *-spec.js"
+    "test": "mocha *-spec.js"
   },
   "dependencies": {
     "esprima": "^1.2.2",
@@ -19,5 +19,20 @@
     "mocha": "^1.21.4"
   },
   "author": "Sam Rijs",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/srijs/node-redis-function.git"
+  },
+  "keywords": [
+    "redis",
+    "script",
+    "eval",
+    "lua",
+    "transpile"
+  ],
+  "bugs": {
+    "url": "https://github.com/srijs/node-redis-function/issues"
+  },
+  "homepage": "https://github.com/srijs/node-redis-function"
 }
